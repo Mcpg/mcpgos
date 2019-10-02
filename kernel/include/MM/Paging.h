@@ -59,5 +59,5 @@ bool MmIsUser(uintptr_t virt);
 bool MmMap(uint32_t phys, uintptr_t virt, bool user, bool writable);
 bool MmUnmap(uintptr_t virt);
 
-/* 512 kB in size */
-extern PageTableEntry KernelPageTables[128];
+/* 512 kB in size, created in _start.asm, describes the entire kernel space */
+extern PageTableEntry KernelPageTables[131072];

@@ -15,12 +15,12 @@ int liballoc_unlock()
     return 0;
 }
 
-void* liballoc_alloc(int amount)
+void* liballoc_alloc(size_t amount)
 {
-    return NULL; // todo you idiot
+    return (void*) MmVmAllocate(amount);
 }
 
-int liballoc_free(void* pageBase, int amount)
+int liballoc_free(void* pageBase, size_t amount)
 {
-    // todo you idiot
+    MmVmFree((uintptr_t) pageBase, amount);
 }

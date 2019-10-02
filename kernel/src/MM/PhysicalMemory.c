@@ -1,6 +1,8 @@
 #include <McpgOS.h>
 
-static uint8_t MmPmBitmap[262144];
+#define MM_BITMAP_SIZE 1048576
+
+static uint8_t MmPmBitmap[MM_BITMAP_SIZE / 4];
 static uint32_t MmPmBitmapTop = 0;
 
 static const uint8_t MmPmPageFree = 0;
@@ -23,28 +25,43 @@ void MmPmInitAllocator()
 {
     memset(MmPmBitmap, MmPmPageFree, sizeof(MmPmBitmap));
     memset(MmPmBitmap, MmPmPageUnusable, 64);
-    memset(&(MmPmBitmap + 64), MmPmPageUsed, KernelSizePages);
+    memset(&MmPmBitmap[64], MmPmPageUsed, KernelSizePages);
 
     MmPmBitmapTop = 64 + KernelSizePages;
 }
 
 uint32_t MmPmAllocate()
 {
-    int i;
+    uint32_t i;
     bool foundPage = false;
 
-    for (i = MmPmBitmapTop; i < 1048576; i++)
+    for (i = MmPmBitmapTop; i < MM_BITMAP_SIZE; i++)
     {
-        
+        if (MmPmGetBitmapValue(i) == MmPmPageFree)
+        {
+            foundPage = true;
+            MmPmBitmapTop = i + 1;
+            break; 
+        }
     }
 
     if (!foundPage)
         return 0;
 
-    return 0;
+    MmPmSetBitmapValue(i, MmPmPageUsed);
+
+    return i << 10;
 }
 
 void MmPmFree(uint32_t phys)
 {
+    uint32_t pageIndex = phys >> 10;
+    
+    if (MmPmGetBitmapValue(pageIndex) != MmPmPageUsed)
+        return;
 
+    MmPmSetBitmapValue(pageIndex, MmPmPageFree);
+
+    if (MmPmBitmapTop > pageIndex)
+        MmPmBitmapTop = pageIndex;
 }

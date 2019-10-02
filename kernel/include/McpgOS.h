@@ -17,7 +17,7 @@
 #include <MM/VirtualMemory.h>
 #include <MM/PhysicalMemory.h>
 #include <MM/Paging.h>
-//#include <MM/LibAlloc.h>
+#include <MM/LibAlloc.h>
 
 /* Linker-defined symbols */
 extern void* KernelStart;
