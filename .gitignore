@@ -1,0 +1,9 @@
+
+*.dmp
+*.iso
+*.o
+*.a
+*.bin
+*.kernel
+bin/
+
