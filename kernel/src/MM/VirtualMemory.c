@@ -52,7 +52,7 @@ uintptr_t MmVmAllocate(uint32_t pages)
         KernelPageTables[i].PhysAddress = MmPmAllocate() >> 12;
     }
 
-    return VirtualAddress + (startingPage * 4096);
+    return (uintptr_t) (&VirtualAddress) + (startingPage * 4096);
 }
 
 void MmVmFree(uintptr_t virt, uint32_t pages)

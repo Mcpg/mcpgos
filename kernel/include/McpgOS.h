@@ -13,11 +13,14 @@
 #include <CPU/Idt.h>
 #include <CPU/IO.h>
 #include <CPU/Pic.h>
+#include <CPU/Pit.h>
 
 #include <MM/VirtualMemory.h>
 #include <MM/PhysicalMemory.h>
 #include <MM/Paging.h>
 #include <MM/LibAlloc.h>
+
+#include <Scheduler/Scheduler.h>
 
 /* Linker-defined symbols */
 extern void* KernelStart;

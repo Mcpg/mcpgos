@@ -65,7 +65,7 @@ section .text
     InterruptHandler 0x2F
     
     ; Syscall interrupt
-    InterruptHandler 0x80
+    InterruptHandler 0x83
     
     global _IntDefault:function (_IntDefault.end - _IntDefault)
     _IntDefault:

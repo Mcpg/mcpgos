@@ -1,6 +1,9 @@
 #include <MM/LibAlloc.h>
 #include <stdint.h>
 
+// oof
+#undef DEBUG
+
 /**  Durand's Amazing Super Duper Memory functions.  */
 
 #define VERSION 	"1.1"

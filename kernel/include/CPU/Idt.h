@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-struct IdtFrame
+typedef struct IdtFrame
 {
     /* Pushed by int handler */
     uint32_t Gs;
@@ -34,8 +34,7 @@ struct IdtFrame
     uint32_t Eflags;
     uint32_t UserEsp;
     uint32_t Ss;
-};
-typedef struct IdtFrame IdtFrame;
+} IdtFrame;
 
 extern uint64_t IdtTable[256];
 
@@ -79,7 +78,7 @@ void _Int_0x2C();
 void _Int_0x2D();
 void _Int_0x2E();
 void _Int_0x2F();
-void _Int_0x80();
+void _Int_0x83();
 
 IdtFrame* HLIntHandler(IdtFrame* idtFrame);
 

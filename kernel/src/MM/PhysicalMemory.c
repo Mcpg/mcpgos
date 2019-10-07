@@ -25,9 +25,9 @@ void MmPmInitAllocator()
 {
     memset(MmPmBitmap, MmPmPageFree, sizeof(MmPmBitmap));
     memset(MmPmBitmap, MmPmPageUnusable, 64);
-    memset(&MmPmBitmap[64], MmPmPageUsed, KernelSizePages);
+    memset(&MmPmBitmap[64], MmPmPageUsed, &KernelSizePages);
 
-    MmPmBitmapTop = 64 + KernelSizePages;
+    MmPmBitmapTop = 64 + &KernelSizePages;
 }
 
 uint32_t MmPmAllocate()
@@ -50,7 +50,7 @@ uint32_t MmPmAllocate()
 
     MmPmSetBitmapValue(i, MmPmPageUsed);
 
-    return i << 10;
+    return i << 12;
 }
 
 void MmPmFree(uint32_t phys)

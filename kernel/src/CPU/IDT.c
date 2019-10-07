@@ -4,6 +4,14 @@ uint64_t IdtTable[256];
 
 IdtFrame* HLIntHandler(IdtFrame* idtFrame)
 {
+    // TODO: remove the temporary handling of a PF
+    if (idtFrame->InterruptNumber == 0x0E)
+    {
+        *((uint8_t*) 0xB8000) = 'P';
+        *((uint8_t*) 0xB8002) = 'F';
+        while(1);
+    }
+
     if (idtFrame->InterruptNumber >= 0x20 &&
         idtFrame->InterruptNumber <= 0x2F)
     {
@@ -55,7 +63,7 @@ void IdtInit()
     IdtSetEntry(0x2D, (void*) _Int_0x2D, IDT_GATE_INT32, 0);
     IdtSetEntry(0x2E, (void*) _Int_0x2E, IDT_GATE_INT32, 0);
     IdtSetEntry(0x2F, (void*) _Int_0x2F, IDT_GATE_INT32, 0);
-    IdtSetEntry(0x80, (void*) _Int_0x80, IDT_GATE_INT32, 3);
+    IdtSetEntry(0x83, (void*) _Int_0x83, IDT_GATE_INT32, 3);
     IdtLoad();
     
     asm volatile("sti");

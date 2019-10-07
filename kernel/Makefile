@@ -8,7 +8,7 @@ INCLUDE_DIR = include
 BIN_DIR = bin
 
 ifeq ($(DEBUG),true)
-	CXXFLAGS := $(CXXFLAGS) -g -DDEBUG
+	CFLAGS := $(CFLAGS) -g -DDEBUG
 	ASFLAGS := $(ASFLAGS) -F dwarf -g -DDEBUG
 	BIN_DIR := $(BIN_DIR)/debug
 else
@@ -17,7 +17,7 @@ endif
 
 CFLAGS := $(CFLAGS) -I$(INCLUDE_DIR) -ffreestanding -nostdlib -masm=intel
 CFLAGS := $(CFLAGS) -I../libc/include
-ASFLAGS := $(ASFLAGS) -f elf -I $(INCLUDE_DIR)/
+ASFLAGS := $(ASFLAGS) -f elf -I $(INCLUDE_DIR)/ -g
 
 LINKER_SCRIPT = $(SRC_DIR)/mcpgos.ld
 
