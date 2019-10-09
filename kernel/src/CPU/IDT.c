@@ -1,9 +1,12 @@
 #include <McpgOS.h>
 
 uint64_t IdtTable[256];
+IdtIntCallback IdtHLHandlers[256] = {0};
 
 IdtFrame* HLIntHandler(IdtFrame* idtFrame)
 {
+    uint8_t n = idtFrame->InterruptNumber;
+
     // TODO: remove the temporary handling of a PF
     if (idtFrame->InterruptNumber == 0x0E)
     {
@@ -12,10 +15,14 @@ IdtFrame* HLIntHandler(IdtFrame* idtFrame)
         while(1);
     }
 
-    if (idtFrame->InterruptNumber >= 0x20 &&
-        idtFrame->InterruptNumber <= 0x2F)
+    if (IdtHLHandlers[n] != NULL)
     {
-        PicEOI(idtFrame->InterruptNumber - 0x20);
+        idtFrame = IdtHLHandlers[n](idtFrame);
+    }
+
+    if (n >= 0x20 && n <= 0x2F)
+    {
+        PicEOI(n - 0x20);
     }
     return idtFrame;
 }
@@ -66,7 +73,7 @@ void IdtInit()
     IdtSetEntry(0x83, (void*) _Int_0x83, IDT_GATE_INT32, 3);
     IdtLoad();
     
-    asm volatile("sti");
+    //asm volatile("sti");
 }
 
 void IdtSetEntry(

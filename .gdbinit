@@ -5,7 +5,7 @@ file kernel/mcpgos.kernel
 target remote localhost:1234
 
 # Auto break on PF
-b IDT.c:11
+b IDT.c:13
 
 # Auto break on return from MmVmAllocate()
 #b VirtualMemory.c:55

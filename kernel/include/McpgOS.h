@@ -15,12 +15,18 @@
 #include <CPU/Pic.h>
 #include <CPU/Pit.h>
 
+#include <IOStream.h>
+#include <Kprintf.h>
+
 #include <MM/VirtualMemory.h>
 #include <MM/PhysicalMemory.h>
 #include <MM/Paging.h>
 #include <MM/LibAlloc.h>
 
+#include <Drivers/DriverManager.h>
 #include <Scheduler/Scheduler.h>
+
+#include <Drivers/TTY.h>
 
 /* Linker-defined symbols */
 extern void* KernelStart;

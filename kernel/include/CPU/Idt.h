@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 
-typedef struct IdtFrame
+typedef struct
 {
     /* Pushed by int handler */
     uint32_t Gs;
@@ -37,6 +37,9 @@ typedef struct IdtFrame
 } IdtFrame;
 
 extern uint64_t IdtTable[256];
+
+typedef IdtFrame* (*IdtIntCallback)(IdtFrame*);
+extern IdtIntCallback IdtHLHandlers[256];
 
 // Default interrupt handler, running iret as soon as it's called
 void _IntDefault();

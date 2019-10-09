@@ -23,7 +23,7 @@ else
 	BIN_DIR := $(BIN_DIR)/ndebug
 endif
 
-CFLAGS := $(CFLAGS) -I$(INCLUDE_DIR) -ffreestanding -nostdlib -masm=intel
+CFLAGS := $(CFLAGS) -I$(INCLUDE_DIR) -ffreestanding -nostdlib
 ASFLAGS := $(ASFLAGS) -f elf -I $(INCLUDE_DIR)/
 ARFLAGS := rcs
 

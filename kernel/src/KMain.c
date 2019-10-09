@@ -15,12 +15,19 @@ void KMain()
     MmPmInitAllocator();
     MmVmInitAllocator();
 
+    /* Initialize the drivers */
+    DmInit();
+    TTYInit();
+
     /* Initialize other kernel components */
     SchedInit();
 
-    *((uint32_t*)0xB8000)=0x0733073A; /* :3 */
+    liballoc_dump();
+
+    //*((uint32_t*)0xB8000)=0x0733073A; /* :3 */
+    asm("sti");
     while(1)
     {
-        asm volatile("hlt");
+        asm("hlt");
     }
 }

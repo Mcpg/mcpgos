@@ -35,5 +35,6 @@ void PicEOI(uint8_t irq)
     {
         Outb(PIC2_CMD, 0x20);
     }
+    //asm volatile ( "outb %0, %1" : : "a"(0x20), "Nd"(PIC1_CMD) );
     Outb(PIC1_CMD, 0x20);
 }

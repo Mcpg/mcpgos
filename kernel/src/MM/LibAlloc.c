@@ -1,8 +1,11 @@
 #include <MM/LibAlloc.h>
 #include <stdint.h>
+#include <McpgOS.h>
 
 // oof
 #undef DEBUG
+#define INFO
+#define atexit(...)
 
 /**  Durand's Amazing Super Duper Memory functions.  */
 
@@ -53,10 +56,13 @@
 #define LIBALLOC_DEAD	0xdeaddead
 
 #if defined DEBUG || defined INFO
-#include <stdio.h>
-#include <stdlib.h>
 
-#define FLUSH()		fflush( stdout )
+// Hacks around this unimplement libc bullshit
+
+//#include <stdio.h>
+//#include <stdlib.h>
+
+#define FLUSH()//		fflush( stdout )
 
 #endif
 
@@ -143,7 +149,7 @@ static void* liballoc_memcpy(void* s1, const void* s2, size_t n)
  
 
 #if defined DEBUG || defined INFO
-static void liballoc_dump()
+void liballoc_dump()
 {
 #ifdef DEBUG
 	struct liballoc_major *maj = l_memRoot;
