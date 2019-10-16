@@ -1,18 +1,17 @@
 #include <McpgOS.h>
 
-#define PIT_MCR 0x43
-#define PIT_C0  0x40
+static const uint8_t PitMcr = 0x43;
+static const uint8_t PitChannel0 = 0x40;
 
 void PitInit()
 {
-    //PitReconfigureC0(0);
+    // 1.193182 MHz / 1000 Hz = divider
+    PitReconfigureC0(0x1234DE / 1000);
 }
 
 void PitReconfigureC0(uint16_t div)
 {
-    // TODO: fix PIT reconfiguration
-    // Start reconfiguring the channel 0, in 16-bit binary mode...
-    Outb(PIT_MCR, 0x30);
-    Outb(PIT_C0, div & 0xFF);
-    Outb(PIT_C0, (div >> 8) & 0xFF);
+    Outb(PitMcr, 0x34);
+    Outb(PitChannel0, div & 0xFF);
+    Outb(PitChannel0, (div >> 8) & 0xFF);
 }

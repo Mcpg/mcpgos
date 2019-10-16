@@ -1,20 +1,23 @@
 #pragma once
 
-#define IDT_GATE_TASK32 0x5
-#define IDT_GATE_INT32  0xE
-#define IDT_GATE_TRAP32 0xF
+#include <McpgOS.h>
 
-#include <stdint.h>
+typedef enum
+{
+    IdtGateTask32 = 0x5,
+    IdtGateInt32  = 0xE,
+    IdtGateTrap32 = 0xF
+} IdtGateType;
 
 typedef struct
 {
-    /* Pushed by int handler */
+    // Pushed by int handler
     uint32_t Gs;
     uint32_t Fs;
     uint32_t Es;
     uint32_t Ds;
 
-    /* Pushed by pushad */
+    // Pushed by pushad
     uint32_t Edi;
     uint32_t Esi;
     uint32_t Ebp;
@@ -24,10 +27,10 @@ typedef struct
     uint32_t Ecx;
     uint32_t Eax;
 
-    /* Pushed by int handler */
+    // Pushed by int handler
     uint32_t InterruptNumber;
 
-    /* Pushed by the CPU */
+    // Pushed by the CPU
     uint32_t ErrorCode;
     uint32_t Eip;
     uint32_t Cs;
@@ -39,7 +42,7 @@ typedef struct
 extern uint64_t IdtTable[256];
 
 typedef IdtFrame* (*IdtIntCallback)(IdtFrame*);
-extern IdtIntCallback IdtHLHandlers[256];
+extern IdtIntCallback IdtIntHandlers[256];
 
 // Default interrupt handler, running iret as soon as it's called
 void _IntDefault();
@@ -83,7 +86,7 @@ void _Int_0x2E();
 void _Int_0x2F();
 void _Int_0x83();
 
-IdtFrame* HLIntHandler(IdtFrame* idtFrame);
+IdtFrame* IdtGlobalIntHandler(IdtFrame* idtFrame);
 
 void IdtInit();
 void IdtLoad();

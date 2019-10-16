@@ -2,10 +2,14 @@
 
 #include <stdbool.h>
 
-typedef struct
+typedef struct SchedTask SchedTask;
+struct SchedTask
 {
     uint32_t TaskID;
-    uint8_t IsKernelTask;
+    bool IsKernelTask;
+
+    SchedTask* Next;
+    SchedTask* Prev;
 
     struct
     {
@@ -40,14 +44,18 @@ typedef struct
             void* ParentProcess; // TODO: change the pointer type to process struct pointer type
         } UserTaskInfo;
     };
-} SchedTask;
+};
 
-#define SCHED_MAX_TASK_AMOUNT 128
-extern uint16_t SchedTaskCount;
-extern SchedTask* SchedTasks[SCHED_MAX_TASK_AMOUNT];
+
+extern uint32_t SchedTaskCount;
+extern SchedTask* SchedIdleTask;
+extern SchedTask* SchedCurrentTask;
 
 extern uint64_t SchedTickCounter;
 
 void SchedInit();
-void SchedIdle();
+void SchedEnable();
+SchedTask* SchedGetTask(int taskID);
 int SchedAddTask(SchedTask* task);
+int SchedRemoveTask(int taskID);
+int SchedCreateKernelTask(char* name, void* func, size_t stackSize);

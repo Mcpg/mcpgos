@@ -6,6 +6,8 @@ void MmVmInitAllocator()
 {
 }
 
+
+
 // TODO: Create a better allocator
 uintptr_t MmVmAllocate(uint32_t pages)
 {

@@ -4,5 +4,5 @@
 
 #define printf Kprintf
 
-extern IOStream* KprintfStream;
+extern IoStream* KprintfStream;
 void Kprintf(char* msg, ...);

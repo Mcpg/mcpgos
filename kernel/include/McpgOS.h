@@ -5,37 +5,53 @@
 #include <stdint.h>
 #include <string.h>
 
-// TODO: definition of system functions
-#define KPanic(...)
-#define KAssert(...)
+void KPanic(char* reason);
+#define KAssert(...)                              \
+    if (!((int) (__VA_ARGS__)))                   \
+        KPanic("Assertion failed: " #__VA_ARGS__)
 
-#include <CPU/Gdt.h>
-#include <CPU/Idt.h>
-#include <CPU/IO.h>
-#include <CPU/Pic.h>
-#include <CPU/Pit.h>
+#define CLI() asm volatile("cli")
+#define HALT() asm volatile("hlt")
+#define STI() asm volatile("sti")
 
-#include <IOStream.h>
+#include <Cpu/Gdt.h>
+#include <Cpu/Idt.h>
+#include <Cpu/Io.h>
+#include <Cpu/Pic.h>
+#include <Cpu/Pit.h>
+
+#include <IoStream.h>
 #include <Kprintf.h>
 
-#include <MM/VirtualMemory.h>
-#include <MM/PhysicalMemory.h>
-#include <MM/Paging.h>
-#include <MM/LibAlloc.h>
+#include <Mm/VirtualMemory.h>
+#include <Mm/PhysicalMemory.h>
+#include <Mm/Paging.h>
+#include <Mm/LibAlloc.h>
 
 #include <Drivers/DriverManager.h>
 #include <Scheduler/Scheduler.h>
 
 #include <Drivers/TTY.h>
+#include <Drivers/RamDisk.h>
+#include <Drivers/PS2Keyboard.h>
 
-/* Linker-defined symbols */
+// Linker-defined symbols
+extern void* _KernelStart;
+extern void* _KernelEnd;
+extern void* _KernelSize;
+extern void* _KernelSizePages;
+
+extern void* _VirtualAddress;
+extern void* _PhysicalAddress;
+
+// Linker symbols defined in a more accessible form
 extern void* KernelStart;
 extern void* KernelEnd;
 extern uint32_t KernelSize;
 extern uint32_t KernelSizePages;
 
-extern uint32_t VirtualAddress;
-extern uint32_t PhysicalAddress;
+extern uintptr_t VirtualAddress;
+extern uintptr_t PhysicalAddress;
 
 /* Up to 4K of multiboot tags can be stored here. Just so memory management
    is a little bit easier (mboot tags don't have to be taken into

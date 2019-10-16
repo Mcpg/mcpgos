@@ -1,7 +1,7 @@
 #include <McpgOS.h>
 #include <stdarg.h>
 
-IOStream* KprintfStream = NULL;
+IoStream* KprintfStream = NULL;
 
 void Kprintf(char* msg, ...)
 {
@@ -13,7 +13,7 @@ void Kprintf(char* msg, ...)
     va_start(vargs, msg);
 
     // TODO: implement formatting support
-    IOWrite(KprintfStream, msg, strlen(msg));
+    IoWrite(KprintfStream, msg, strlen(msg));
 
     va_end(vargs);
 }

@@ -1,7 +1,12 @@
 #include <McpgOS.h>
 #include <stdint.h>
 
-uint32_t CurrentPageDirectory = 0;
+void* KernelStart = &_KernelStart;
+void* KernelEnd = &_KernelEnd;
+uint32_t KernelSize = (uint32_t) &_KernelSize;
+uint32_t KernelSizePages = (uint32_t) &_KernelSizePages;
+uintptr_t VirtualAddress = (uintptr_t) &_VirtualAddress;
+uintptr_t PhysicalAddress = (uintptr_t) &_PhysicalAddress;
 
 void KMain()
 {
@@ -18,6 +23,7 @@ void KMain()
     /* Initialize the drivers */
     DmInit();
     TTYInit();
+    RamDiskInit();
 
     /* Initialize other kernel components */
     SchedInit();
@@ -25,7 +31,7 @@ void KMain()
     liballoc_dump();
 
     //*((uint32_t*)0xB8000)=0x0733073A; /* :3 */
-    asm("sti");
+    SchedEnable();
     while(1)
     {
         asm("hlt");

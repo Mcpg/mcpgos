@@ -1,134 +1,208 @@
 #include <McpgOS.h>
 
-uint16_t CurrentTask = 0;
-uint16_t SchedTaskCount = 0;
-SchedTask* SchedTasks[SCHED_MAX_TASK_AMOUNT];
 uint64_t SchedTickCounter = 0;
-static uint32_t TaskIDCounter = 0;
 
-static SchedTask IdleTask;
-static SchedTask IdleTask2;
+uint32_t SchedTaskCount = 0;
+SchedTask* SchedIdleTask = NULL;
+SchedTask* SchedCurrentTask;
+
+static SchedTask* SchedTaskListEnd;
+
+static inline void SchedSaveFrame(IdtFrame* source, SchedTask* target)
+{
+    target->CPUFrame.Eax = source->Eax;
+    target->CPUFrame.Ebx = source->Ebx;
+    target->CPUFrame.Ecx = source->Ecx;
+    target->CPUFrame.Edx = source->Edx;
+    target->CPUFrame.Esi = source->Esi;
+    target->CPUFrame.Edi = source->Edi;
+    target->CPUFrame.Esp = source->Esp;
+    target->CPUFrame.Ebp = source->Ebp;
+    target->CPUFrame.Eip = source->Eip;
+    target->CPUFrame.Eflags = source->Eflags;
+    target->CPUFrame.Cs = source->Cs;
+    target->CPUFrame.Ds = source->Ds;
+    target->CPUFrame.Es = source->Es;
+    target->CPUFrame.Fs = source->Fs;
+    target->CPUFrame.Gs = source->Gs;
+    target->CPUFrame.Ss = source->Ss;
+}
+
+static inline void SchedLoadFrame(IdtFrame* target, SchedTask* source)
+{
+    target->Eax = source->CPUFrame.Eax;
+    target->Ebx = source->CPUFrame.Ebx;
+    target->Ecx = source->CPUFrame.Ecx;
+    target->Edx = source->CPUFrame.Edx;
+    target->Esi = source->CPUFrame.Esi;
+    target->Edi = source->CPUFrame.Edi;
+    target->Esp = source->CPUFrame.Esp;
+    target->Ebp = source->CPUFrame.Ebp;
+    target->Eip = source->CPUFrame.Eip;
+    target->Eflags = source->CPUFrame.Eflags;
+    target->Cs = source->CPUFrame.Cs;
+    target->Ds = source->CPUFrame.Ds;
+    target->Es = source->CPUFrame.Es;
+    target->Fs = source->CPUFrame.Fs;
+    target->Ss = source->CPUFrame.Ss;
+}
 
 static IdtFrame* Irq0Handler(IdtFrame* idtFrame)
 {
-    SchedTask* task;
+    static bool switchedAtLeastOnce = false;
 
     SchedTickCounter++;
 
-    CurrentTask++;
-    if (CurrentTask >= SchedTaskCount)
-    {
-        CurrentTask = 0;
-    }
+    // TODO:
+    //   * Sleep
+    //   * Giving tasks a bit more work time
+    if (switchedAtLeastOnce)
+        SchedSaveFrame(idtFrame, SchedCurrentTask);
+    else
+        switchedAtLeastOnce = true;
 
-    if (CurrentTask == 0)
-    {
-        Kprintf("task is 0\n");
-    }
-
-    task = SchedTasks[CurrentTask];
-    idtFrame->Eip = task->CPUFrame.Eip;
-    idtFrame->Eflags = task->CPUFrame.Eflags;
-    idtFrame->UserEsp = task->CPUFrame.Esp;
-
-    idtFrame->Cs = task->CPUFrame.Cs;
-    idtFrame->Ds = task->CPUFrame.Ds;
-    idtFrame->Es = task->CPUFrame.Es;
-    idtFrame->Fs = task->CPUFrame.Fs;
-    idtFrame->Gs = task->CPUFrame.Gs;
-    idtFrame->Ss = task->CPUFrame.Ss;
-
-    idtFrame->Eax = task->CPUFrame.Eax;
-    idtFrame->Ebx = task->CPUFrame.Ebx;
-    idtFrame->Ecx = task->CPUFrame.Ecx;
-    idtFrame->Edx = task->CPUFrame.Edx;
-    idtFrame->Esi = task->CPUFrame.Esi;
-    idtFrame->Edi = task->CPUFrame.Edi;
-    idtFrame->Ebp = task->CPUFrame.Ebp;
+    SchedCurrentTask = SchedCurrentTask->Next;
+    SchedLoadFrame(idtFrame, SchedCurrentTask);
 
     return idtFrame;
 }
 
-static void Task2()
+static void SchedIdle()
 {
-    while(1)
+    while (1)
     {
-        Kprintf("Task 2!\n");
-        asm("hlt");
+        Kprintf("owo\n");
+        HALT();
+    }
+}
+
+static void SchedIdle2()
+{
+    while (1)
+    {
+        Kprintf("uwu\n");
+        HALT();
     }
 }
 
 void SchedInit()
 {
-    asm("cli");
-    IdtHLHandlers[0x20] = Irq0Handler;
+    if (!SchedCreateKernelTask("IdleTask", SchedIdle, 128))
+        KPanic("Couldn't start the IdleTask!");
 
-    IdleTask.IsKernelTask = 1;
-    IdleTask.CPUFrame.Gs = GDT_KDATA;
-    IdleTask.CPUFrame.Fs = GDT_KDATA;
-    IdleTask.CPUFrame.Ss = GDT_KDATA;
-    IdleTask.CPUFrame.Es = GDT_KDATA;
-    IdleTask.CPUFrame.Ds = GDT_KDATA;
-    IdleTask.CPUFrame.Cs = GDT_KCODE;
+    SchedCreateKernelTask("IdleTask2", SchedIdle2, 128);
 
-    IdleTask.CPUFrame.Edi = 0;
-    IdleTask.CPUFrame.Esi = 0;
-    IdleTask.CPUFrame.Ebp = ((uint32_t) malloc(4096)) + 4096;
-    IdleTask.CPUFrame.Esp = IdleTask.CPUFrame.Ebp;
-    IdleTask.CPUFrame.Ebx = 0;
-    IdleTask.CPUFrame.Edx = 0;
-    IdleTask.CPUFrame.Ecx = 0;
-    IdleTask.CPUFrame.Eax = 0;
-    
-    IdleTask.CPUFrame.Eip = (uint32_t) SchedIdle;
-    IdleTask.CPUFrame.Eflags = 0x200; // int flag set
-
-    ///////
-
-    IdleTask2.IsKernelTask = 1;
-    IdleTask2.CPUFrame.Gs = GDT_KDATA;
-    IdleTask2.CPUFrame.Fs = GDT_KDATA;
-    IdleTask2.CPUFrame.Ss = GDT_KDATA;
-    IdleTask2.CPUFrame.Es = GDT_KDATA;
-    IdleTask2.CPUFrame.Ds = GDT_KDATA;
-    IdleTask2.CPUFrame.Cs = GDT_KCODE;
-
-    IdleTask2.CPUFrame.Edi = 0;
-    IdleTask2.CPUFrame.Esi = 0;
-    IdleTask2.CPUFrame.Ebp = ((uint32_t) malloc(4096)) + 4096;
-    IdleTask2.CPUFrame.Esp = IdleTask.CPUFrame.Ebp;
-    IdleTask2.CPUFrame.Ebx = 0;
-    IdleTask2.CPUFrame.Edx = 0;
-    IdleTask2.CPUFrame.Ecx = 0;
-    IdleTask2.CPUFrame.Eax = 0;
-    
-    IdleTask2.CPUFrame.Eip = (uint32_t) Task2;
-    IdleTask2.CPUFrame.Eflags = 0x200; // int flag set
-
-
-    SchedAddTask(&IdleTask);
-    SchedAddTask(&IdleTask2);
+    CLI();
 }
 
-void SchedIdle()
+void SchedEnable()
 {
-    //asm("sti");
-    while(1)
+    IdtIntHandlers[0x20] = Irq0Handler;
+    STI();
+}
+
+SchedTask* SchedGetTask(int taskID)
+{
+    bool foundTask = false;
+    SchedTask* currentTask = SchedIdleTask;
+
+    do
     {
-        Kprintf("Task 1!\n");
-        asm("hlt");
-    }
+        if (currentTask->TaskID == taskID)
+        {
+            foundTask = true;
+            break;
+        }
+        else
+        {
+            currentTask = currentTask->Next;
+            continue;
+        }
+    } while (true);
+
+    return foundTask ? currentTask : NULL;
 }
 
 int SchedAddTask(SchedTask* task)
 {
-    if (SchedTaskCount == SCHED_MAX_TASK_AMOUNT)
-        return 0;
+    static uint32_t TaskIDCounter = 1;
 
     KAssert(task != NULL);
 
-    SchedTasks[SchedTaskCount++] = task;
+    CLI();
+
+    if (SchedIdleTask == NULL)
+    {
+        SchedIdleTask = task;
+        SchedCurrentTask = task;
+        SchedTaskListEnd = task;
+
+        task->Prev = task;
+        task->Next = task;
+    }
+    else
+    {
+        SchedIdleTask->Prev = task;
+        SchedTaskListEnd->Next = task;
+        SchedTaskListEnd = task;
+    }
+
+    SchedTaskCount++;
     task->TaskID = TaskIDCounter++;
 
-    return 1;
+    STI();
+
+    return task->TaskID;
+}
+
+int SchedRemoveTask(int taskID)
+{
+    SchedTask* task;
+    SchedTask* next;
+
+    CLI();
+
+    task = SchedGetTask(taskID);
+    if (!task)
+        return false;
+
+    next = task->Next;
+    task->Next = task->Prev;
+    task->Prev = next;
+
+    SchedTaskCount--;
+
+    free(task);
+
+    STI();
+
+    return true;
+}
+
+int SchedCreateKernelTask(char* name, void* func, size_t stackSize)
+{
+    SchedTask* task = (SchedTask*) malloc(sizeof(SchedTask));
+    if (!task)
+        return false;
+
+    task->IsKernelTask = true;
+    task->KernelTaskInfo.TaskName = name;
+    task->CPUFrame.Cs = GdtKernelCode;
+    task->CPUFrame.Ds = GdtKernelData;
+    task->CPUFrame.Es = GdtKernelData;
+    task->CPUFrame.Fs = GdtKernelData;
+    task->CPUFrame.Gs = GdtKernelData;
+    task->CPUFrame.Ss = GdtKernelData;
+    task->CPUFrame.Eax = 0;
+    task->CPUFrame.Ebx = 0;
+    task->CPUFrame.Ecx = 0;
+    task->CPUFrame.Edx = 0;
+    task->CPUFrame.Esi = 0;
+    task->CPUFrame.Edi = 0;
+    task->CPUFrame.Ebp = ((uint32_t) malloc(stackSize)) + stackSize;
+    task->CPUFrame.Esp = task->CPUFrame.Ebp;
+    task->CPUFrame.Eip = (uint32_t) func;
+    task->CPUFrame.Eflags = 0x200; // int bit set
+
+    return SchedAddTask(task);
 }

@@ -78,10 +78,10 @@ section .text
         ; Prepare kernel space pages
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
-        extern KernelStart
-        extern KernelEnd
+        extern _KernelStart
+        extern _KernelEnd
         
-        mov eax, TO_PHYSICAL(KernelStart)
+        mov eax, TO_PHYSICAL(_KernelStart)
         mov esi, TO_PHYSICAL(KernelPageTables)
         
         .kernelSpacePreparing:
@@ -93,7 +93,7 @@ section .text
             
             add esi, 4
             add eax, 4096
-            cmp eax, TO_PHYSICAL(KernelEnd)
+            cmp eax, TO_PHYSICAL(_KernelEnd)
             jl .kernelSpacePreparing
         
         ; Prepare temoporary page directory

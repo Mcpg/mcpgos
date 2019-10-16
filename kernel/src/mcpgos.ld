@@ -1,36 +1,36 @@
 ENTRY (_start)
 
-VirtualAddress = 0xE0000000;
-PhysicalAddress = 0x100000;
+_VirtualAddress = 0xE0000000;
+_PhysicalAddress = 0x100000;
 
 SECTIONS
 {
-	. = VirtualAddress;
-	KernelStart = .;
-    .multiboot ALIGN(8) : AT(ADDR(.multiboot) - VirtualAddress + PhysicalAddress)
+	. = _VirtualAddress;
+	_KernelStart = .;
+    .multiboot ALIGN(8) : AT(ADDR(.multiboot) - _VirtualAddress + _PhysicalAddress)
     {
         *(.multiboot)
     }
-	.text ALIGN(4096) : AT(ADDR(.text) - VirtualAddress + PhysicalAddress)
+	.text ALIGN(4096) : AT(ADDR(.text) - _VirtualAddress + _PhysicalAddress)
 	{
 		*(.text)
 	}
-	.rodata ALIGN(4096) : AT(ADDR(.rodata) - VirtualAddress + PhysicalAddress)
+	.rodata ALIGN(4096) : AT(ADDR(.rodata) - _VirtualAddress + _PhysicalAddress)
 	{
 		*(.rodata)
 	}
-	.data ALIGN(4096) : AT(ADDR(.data) - VirtualAddress + PhysicalAddress)
+	.data ALIGN(4096) : AT(ADDR(.data) - _VirtualAddress + _PhysicalAddress)
 	{
 		*(.data)
 	}
-	.bss ALIGN(4096) : AT(ADDR(.bss) - VirtualAddress + PhysicalAddress)
+	.bss ALIGN(4096) : AT(ADDR(.bss) - _VirtualAddress + _PhysicalAddress)
 	{
 		*(COMMON)
 		*(.bss)
 	}
     . = NEXT(4096);
-	KernelEnd = .;
+	_KernelEnd = .;
 
-	KernelSize = KernelEnd - KernelStart;
-	KernelSizePages = KernelSize / 4096;
+	_KernelSize = _KernelEnd - _KernelStart;
+	_KernelSizePages = _KernelSize / 4096;
 }

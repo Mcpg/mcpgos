@@ -1,6 +1,6 @@
 #include <McpgOS.h>
 
-uint32_t CurrentPageDirectory;
+uint32_t CurrentPageDirectory = 0;
 
 void SwitchPageDirectory(uint32_t newDir)
 {

@@ -1,6 +1,6 @@
 #include <McpgOS.h>
 
-unsigned int DmDriverCount;
+uint32_t DmDriverCount;
 DmDriverDefinition* DmDriverList[DM_MAX_REGISTERED_DRIVERS];
 
 void DmInit()
@@ -14,5 +14,7 @@ int DmRegisterDriver(DmDriverDefinition* def)
     if (DmDriverCount == DM_MAX_REGISTERED_DRIVERS)
         return 0;
     DmDriverList[DmDriverCount++] = def;
+    
+    Kprintf("[DriverManager] Registered driver `%s`.\n", def->DriverID);
     return 1;
 }

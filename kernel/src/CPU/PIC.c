@@ -1,40 +1,41 @@
 #include <McpgOS.h>
-#include <CPU/IO.h>
 
-#define PIC1_CMD  0x20
-#define PIC1_DATA 0x21
-#define PIC2_CMD  0xA0
-#define PIC2_DATA 0xA1
+typedef enum
+{
+    Pic1Command = 0x20,
+    Pic1Data    = 0x21,
+    Pic2Command = 0xA0,
+    Pic2Data    = 0xA1
+} PicIoPort;
+
+const uint8_t PicIrqOffset = 0x20;
 
 void PicInit()
 {
     /* Start initialization in cascade mode */
-    Outb(PIC1_CMD, 0x11);
-    Outb(PIC2_CMD, 0x11);
+    Outb(Pic1Command, 0x11);
+    Outb(Pic2Command, 0x11);
     
     /* Specify the IRQ offsets */
-    Outb(PIC1_DATA, IRQ_OFFSET);
-    Outb(PIC2_DATA, IRQ_OFFSET + 7);
+    Outb(Pic1Data, PicIrqOffset);
+    Outb(Pic2Data, PicIrqOffset + 7);
     
     /* Notify PIC1 about existance of a PIC2 and configure it */
-    Outb(PIC1_DATA, 0x04);
-    Outb(PIC2_DATA, 0x02);
+    Outb(Pic1Data, 0x04);
+    Outb(Pic2Data, 0x02);
     
     /* 8086 mode */
-    Outb(PIC1_DATA, 0x01);
-    Outb(PIC2_DATA, 0x01);
+    Outb(Pic1Data, 0x01);
+    Outb(Pic2Data, 0x01);
     
     /* Set the IRQ masks to not ignore any IRQs */
-    Outb(PIC1_DATA, 0x00);
-    Outb(PIC2_DATA, 0x00);
+    Outb(Pic1Data, 0x00);
+    Outb(Pic2Data, 0x00);
 }
 
 void PicEOI(uint8_t irq)
 {
     if (irq > 7)
-    {
-        Outb(PIC2_CMD, 0x20);
-    }
-    //asm volatile ( "outb %0, %1" : : "a"(0x20), "Nd"(PIC1_CMD) );
-    Outb(PIC1_CMD, 0x20);
+        Outb(Pic2Command, 0x20);
+    Outb(Pic1Command, 0x20);
 }

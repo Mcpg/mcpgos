@@ -7,7 +7,7 @@ typedef struct
     char* DriverID;
 } DmDriverDefinition;
 
-extern unsigned int DmDriverCount;
+extern uint32_t DmDriverCount;
 extern DmDriverDefinition* DmDriverList[DM_MAX_REGISTERED_DRIVERS];
 
 void DmInit();

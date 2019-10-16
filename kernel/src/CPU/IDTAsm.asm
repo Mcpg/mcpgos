@@ -81,8 +81,8 @@ section .text
         push gs
         
         push esp
-        extern HLIntHandler ; High-Level Interrupt Handler
-        call HLIntHandler
+        extern IdtGlobalIntHandler ; High-Level Interrupt Handler
+        call IdtGlobalIntHandler
         mov esp, eax
         
         ; Restore the processor state
