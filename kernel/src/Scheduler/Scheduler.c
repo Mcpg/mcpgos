@@ -71,16 +71,6 @@ static void SchedIdle()
 {
     while (1)
     {
-        Kprintf("owo\n");
-        HALT();
-    }
-}
-
-static void SchedIdle2()
-{
-    while (1)
-    {
-        Kprintf("uwu\n");
         HALT();
     }
 }
@@ -89,8 +79,6 @@ void SchedInit()
 {
     if (!SchedCreateKernelTask("IdleTask", SchedIdle, 128))
         KPanic("Couldn't start the IdleTask!");
-
-    SchedCreateKernelTask("IdleTask2", SchedIdle2, 128);
 
     CLI();
 }
