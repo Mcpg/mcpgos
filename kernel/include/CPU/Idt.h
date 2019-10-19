@@ -44,6 +44,11 @@ extern uint64_t IdtTable[256];
 typedef IdtFrame* (*IdtIntCallback)(IdtFrame*);
 extern IdtIntCallback IdtIntHandlers[256];
 
+static inline void IdtSetHandler(uint8_t i, IdtIntCallback callback)
+{
+    IdtIntHandlers[i] = callback;
+}
+
 // Default interrupt handler, running iret as soon as it's called
 void _IntDefault();
 

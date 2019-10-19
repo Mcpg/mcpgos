@@ -13,6 +13,38 @@ PageDirectoryEntry* GetCurrentPageDirectory()
     return (PageDirectoryEntry*) K_PHYS_TO_VIRT(CurrentPageDirectory);
 }
 
+PageDirectoryEntry* MmAllocPageDirectory()
+{
+    int i;
+    PageDirectoryEntry* current;
+
+    PageDirectoryEntry* result =
+        (PageDirectoryEntry*) malloc(sizeof(PageDirectoryEntry) * 1024);
+    if (result == NULL)
+        return NULL;
+
+    // Map the kernel space
+    for (i = 0; i < 128; i++)
+    {
+        current = &result[768 + i];
+        memset(current, 0, sizeof(PageDirectoryEntry));
+        current->Raw = K_VIRT_TO_PHYS(&KernelPageTables[i * 1024]);
+        current->Present = 1;
+        current->Writable = 1;
+        current->User = 0;
+    }
+
+    // Identity map the first 4 MiB
+    current = &result[0];
+    memset(current, 0, sizeof(PageDirectoryEntry));
+    current->Raw = K_VIRT_TO_PHYS(&ZeroIdentityPage[0]);
+    current->Present = 1;
+    current->Writable = 1;
+    current->User = 0;
+
+    return result;
+}
+
 PageTableEntry* MmGetTable(PageDirectoryEntry* pde, int index)
 {
     KAssert(index >= 0 && index <= 1023);
@@ -31,6 +63,19 @@ PageTableEntry* MmGetTableEntry(PageDirectoryEntry* pde, uintptr_t virt)
 {
     PageTableEntry* pte = MmGetTableAddr(pde, virt);
     return pte ? &pte[virt & 1023] : NULL;
+}
+
+uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t virt)
+{
+    PageTableEntry* pte;
+
+    KAssert(pde != NULL);
+
+    pte = MmGetTableEntry(pde, virt);
+    if (pte == NULL)
+        return 0;
+
+    return (pte->Raw & (~0xFFF)) + (virt & 0xFFF);
 }
 
 bool MmIsPresent(uintptr_t virt)

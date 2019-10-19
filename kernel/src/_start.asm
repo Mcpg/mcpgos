@@ -102,7 +102,7 @@ section .text
         ; Mapping of the first 4 MiB of address space
         .identityPageMapping:
             or dword [TO_PHYSICAL(TemporaryPageDirectory)], \
-                TO_PHYSICAL(_ZeroIdentityPage)
+                TO_PHYSICAL(ZeroIdentityPage)
         
         ; Mapping of the kernel space
         .kernelSpaceMapping:
@@ -161,7 +161,8 @@ section .data
     
     ; Page table identity mapping first 4 MiB
     align 4096
-    _ZeroIdentityPage:
+    global ZeroIdentityPage:data (4*1024)
+    ZeroIdentityPage:
         %assign i 0
         %rep 1024
             dd i | 0b00000011
@@ -184,6 +185,7 @@ section .data
         
 section .bss
     
+    global StackTop:data (STACK_SIZE)
     align 4096
     resb STACK_SIZE
     StackTop:

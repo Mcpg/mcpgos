@@ -23,6 +23,8 @@ static inline uint8_t MmPmGetBitmapValue(uint32_t index)
 
 void MmPmInitAllocator()
 {
+    // TODO: parsing the physical memory map (provided by the bootloader
+    //       via some tag or whatever)
     memset(MmPmBitmap, MmPmPageFree, sizeof(MmPmBitmap));
     memset(MmPmBitmap, MmPmPageUnusable, 64);
     memset(&MmPmBitmap[64], MmPmPageUsed, KernelSizePages);

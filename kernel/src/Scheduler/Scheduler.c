@@ -1,12 +1,20 @@
 #include <McpgOS.h>
 
+SchedKernelTaskElement* SchedKernelTasks = NULL;
+SchedTask* SchedCurrentTask = NULL;
+
 uint64_t SchedTickCounter = 0;
 
-uint32_t SchedTaskCount = 0;
-SchedTask* SchedIdleTask = NULL;
-SchedTask* SchedCurrentTask;
+// Currently iterated process
+ProcessListElement* SchedCurrentProcess = NULL; // may be NULL
 
-static SchedTask* SchedTaskListEnd;
+// 2 ms of CPU time per task
+static const uint32_t SchedTaskTime = 2;
+
+// Currently iterated kernel task
+static SchedKernelTaskElement* SchedCurrKernelTask = NULL;
+// Currently iterated process thread
+static ProcessThreadElement* SchedCurrUserTask = NULL;
 
 static inline void SchedSaveFrame(IdtFrame* source, SchedTask* target)
 {
@@ -47,131 +55,203 @@ static inline void SchedLoadFrame(IdtFrame* target, SchedTask* source)
     target->Ss = source->CPUFrame.Ss;
 }
 
-static IdtFrame* Irq0Handler(IdtFrame* idtFrame)
+static inline void SchedStartKernelTaskIteration()
 {
-    static bool switchedAtLeastOnce = false;
+    SchedCurrentProcess = NULL;
+    SchedCurrKernelTask = SchedKernelTasks;
+    SchedCurrentTask = SchedCurrKernelTask->Task;
+}
+
+static inline void SchedFindNextProcess()
+{
+    while (true)
+    {
+        SchedCurrUserTask = SchedCurrentProcess->Process->Threads;
+        if (SchedCurrUserTask == NULL)
+        {
+            SchedCurrentProcess =
+                (ProcessListElement*) SchedCurrentProcess->ListElement.Next;
+            if (SchedCurrentProcess == NULL)
+            {
+                SchedStartKernelTaskIteration();
+                return;
+            }
+            continue;
+        }
+        break;
+    }
+    SchedCurrentTask = SchedCurrentProcess->Process->Threads->Task;
+}
+
+static void SchedPickNextTask()
+{
+    if (SchedCurrentProcess == NULL)
+    {
+        SchedCurrKernelTask =
+            (SchedKernelTaskElement*) SchedCurrKernelTask->ListElement.Next;
+        if (SchedCurrKernelTask == NULL)
+        {
+            SchedCurrentProcess = ProcessList;
+            if (SchedCurrentProcess == NULL)
+                SchedStartKernelTaskIteration();
+            else
+                SchedFindNextProcess();
+            return;
+        }
+        else
+        {
+            SchedCurrentTask = SchedCurrKernelTask->Task;
+            return;
+        }
+    }
+    else
+    {
+        SchedCurrUserTask =
+            (ProcessThreadElement*) SchedCurrUserTask->ListElement.Next;
+        if (SchedCurrUserTask == NULL)
+        {
+            SchedCurrentProcess =
+                (ProcessListElement*) SchedCurrentProcess->ListElement.Next;
+            SchedFindNextProcess();
+            return;
+        }
+        else
+        {
+            SchedCurrentTask = SchedCurrUserTask->Task;
+            return;
+        }
+    }
+}
+
+static IdtFrame* SchedIrqHandler(IdtFrame* frame)
+{
+    static bool initialized = false;
 
     SchedTickCounter++;
 
-    // TODO:
-    //   * Sleep
-    //   * Giving tasks a bit more work time
-    if (switchedAtLeastOnce)
-        SchedSaveFrame(idtFrame, SchedCurrentTask);
+    if (!initialized)
+        initialized = true;
     else
-        switchedAtLeastOnce = true;
+        SchedSaveFrame(frame, SchedCurrentTask);
+    
+    SchedCurrentTask->RemainingCpuTime--;
+    if (SchedCurrentTask->RemainingCpuTime == 0)
+    {
+        do
+        {
+            SchedPickNextTask();
+            if (SchedCurrentTask->TaskState == TASK_STATE_SLEEPING)
+                SchedCurrentTask->RemainingCpuTime--;
+        } while (SchedCurrentTask->TaskState == TASK_STATE_SLEEPING);
 
-    SchedCurrentTask = SchedCurrentTask->Next;
-    SchedLoadFrame(idtFrame, SchedCurrentTask);
+        SchedCurrentTask->TaskState = TASK_STATE_RUNNING;
+        SchedCurrentTask->RemainingCpuTime = SchedTaskTime;
+    }
 
-    return idtFrame;
+    SchedLoadFrame(frame, SchedCurrentTask);
+
+    if (SchedCurrentProcess != NULL)
+    {
+        if (GetCurrentPageDirectory()
+                != SchedCurrentProcess->Process->PageDirectory)
+        {
+            SwitchPageDirectory(MmVirtToPhys(
+                GetCurrentPageDirectory(),
+                SchedCurrentProcess->Process->PageDirectory
+            ));
+        }
+    }
+
+    return frame;
 }
 
 static void SchedIdle()
 {
-    while (1)
-    {
-        HALT();
-    }
+    while (true) HALT();
 }
 
 void SchedInit()
 {
-    if (!SchedCreateKernelTask("IdleTask", SchedIdle, 128))
-        KPanic("Couldn't start the IdleTask!");
-
-    CLI();
-}
-
-void SchedEnable()
-{
-    IdtIntHandlers[0x20] = Irq0Handler;
-    STI();
-}
-
-SchedTask* SchedGetTask(int taskID)
-{
-    bool foundTask = false;
-    SchedTask* currentTask = SchedIdleTask;
-
-    do
-    {
-        if (currentTask->TaskID == taskID)
-        {
-            foundTask = true;
-            break;
-        }
-        else
-        {
-            currentTask = currentTask->Next;
-            continue;
-        }
-    } while (true);
-
-    return foundTask ? currentTask : NULL;
-}
-
-int SchedAddTask(SchedTask* task)
-{
-    static uint32_t TaskIDCounter = 1;
-
-    KAssert(task != NULL);
-
     CLI();
 
-    if (SchedIdleTask == NULL)
-    {
-        SchedIdleTask = task;
-        SchedCurrentTask = task;
-        SchedTaskListEnd = task;
+    IdtSetHandler(0x20, SchedIrqHandler);
 
-        task->Prev = task;
-        task->Next = task;
-    }
-    else
-    {
-        SchedIdleTask->Prev = task;
-        SchedTaskListEnd->Next = task;
-        SchedTaskListEnd = task;
-    }
+    SchedCurrentTask = SchedCreateKernelTask("KIdle", (void*) SchedIdle, 64);
+    if (SchedCurrentTask == NULL)
+        KPanic("Couldn't create kernel idle task!");
 
-    SchedTaskCount++;
-    task->TaskID = TaskIDCounter++;
-
-    STI();
-
-    return task->TaskID;
+    SchedCurrKernelTask = SchedKernelTasks;
 }
 
-int SchedRemoveTask(int taskID)
+void SchedSleep(SchedTask* task, uint32_t millis)
 {
+    if (task == NULL)
+        task = SchedCurrentTask;
+
+    task->TaskState = TASK_STATE_SLEEPING;
+    task->RemainingCpuTime = millis;
+}
+
+SchedTask* SchedCreateUserThread(Process* owner, uint32_t eip, uint32_t stackPtr)
+{
+    ProcessThreadElement* element;
     SchedTask* task;
-    SchedTask* next;
 
-    CLI();
+    KAssert(owner != NULL);
 
-    task = SchedGetTask(taskID);
-    if (!task)
-        return false;
+    task = (SchedTask*) malloc(sizeof(SchedTask));
+    if (task == NULL)
+        return NULL;
 
-    next = task->Next;
-    task->Next = task->Prev;
-    task->Prev = next;
+    task->IsKernelTask = owner->IsKernelMode;
+    task->UserTaskInfo.ParentProcess = owner;
+    task->CPUFrame.Cs = GdtUserCode;
+    task->CPUFrame.Ds = GdtUserData;
+    task->CPUFrame.Es = GdtUserData;
+    task->CPUFrame.Fs = GdtUserData;
+    task->CPUFrame.Gs = GdtUserData;
+    task->CPUFrame.Ss = GdtUserData;
+    task->CPUFrame.Eax = 0;
+    task->CPUFrame.Ebx = 0;
+    task->CPUFrame.Ecx = 0;
+    task->CPUFrame.Edx = 0;
+    task->CPUFrame.Esi = 0;
+    task->CPUFrame.Edi = 0;
+    task->CPUFrame.Ebp = stackPtr;
+    task->CPUFrame.Esp = stackPtr;
+    task->CPUFrame.Eip = eip;
+    task->CPUFrame.Eflags = 0x200; // int bit set
 
-    SchedTaskCount--;
+    task->TaskState = TASK_STATE_RUNNING;
+    task->RemainingCpuTime = SchedTaskTime;
 
-    free(task);
+    element = (ProcessThreadElement*) malloc(sizeof(ProcessThreadElement));
+    if (element == NULL)
+    {
+        free((void*) task->CPUFrame.Ebp);
+        free(task);
+        return NULL;
+    }
 
-    STI();
+    element->ListElement.Next = NULL;
+    element->ListElement.Prev = NULL;
+    element->Task = task;
 
-    return true;
+    if (owner->Threads == NULL)
+        owner->Threads = element;
+    else
+        LListPushBackC(owner->Threads, element);
+
+    return task;
 }
 
-int SchedCreateKernelTask(char* name, void* func, size_t stackSize)
+SchedTask* SchedCreateKernelTask(char* name, void* func, size_t stackSize)
 {
+    SchedKernelTaskElement* element;
+
     SchedTask* task = (SchedTask*) malloc(sizeof(SchedTask));
-    if (!task)
-        return false;
+    if (task == NULL)
+        return NULL;
 
     task->IsKernelTask = true;
     task->KernelTaskInfo.TaskName = name;
@@ -192,5 +272,25 @@ int SchedCreateKernelTask(char* name, void* func, size_t stackSize)
     task->CPUFrame.Eip = (uint32_t) func;
     task->CPUFrame.Eflags = 0x200; // int bit set
 
-    return SchedAddTask(task);
+    task->TaskState = TASK_STATE_RUNNING;
+    task->RemainingCpuTime = SchedTaskTime;
+
+    element = (SchedKernelTaskElement*) malloc(sizeof(SchedKernelTaskElement));
+    if (element == NULL)
+    {
+        free((void*) task->CPUFrame.Ebp);
+        free(task);
+        return NULL;
+    }
+
+    element->ListElement.Next = NULL;
+    element->ListElement.Prev = NULL;
+    element->Task = task;
+
+    if (SchedKernelTasks == NULL)
+        SchedKernelTasks = element;
+    else
+        LListPushBackC(SchedKernelTasks, element);
+
+    return task;
 }

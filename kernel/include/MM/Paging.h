@@ -48,9 +48,13 @@ extern uint32_t CurrentPageDirectory;
 void SwitchPageDirectory(uint32_t newDir);
 PageDirectoryEntry* GetCurrentPageDirectory();
 
+PageDirectoryEntry* MmAllocPageDirectory();
+
 PageTableEntry* MmGetTable(PageDirectoryEntry* pde, int index);
 PageTableEntry* MmGetTableAddr(PageDirectoryEntry* pde, uintptr_t virt);
 PageTableEntry* MmGetTableEntry(PageDirectoryEntry* pde, uintptr_t virt);
+
+uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t* virt);
 
 bool MmIsPresent(uintptr_t virt);
 bool MmIsWritable(uintptr_t virt);
@@ -59,5 +63,8 @@ bool MmIsUser(uintptr_t virt);
 bool MmMap(uint32_t phys, uintptr_t virt, bool user, bool writable);
 bool MmUnmap(uintptr_t virt);
 
-/* 512 kB in size, created in _start.asm, describes the entire kernel space */
+// 512 kB in size, created in _start.asm, maps the entire kernel space
 extern PageTableEntry KernelPageTables[131072];
+
+// First 4 MiB of address space, identity mapped for kernel only
+extern PageTableEntry ZeroIdentityPage[1024];

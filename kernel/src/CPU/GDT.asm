@@ -45,6 +45,11 @@ section .text
         mov byte [GdtTable.tss + 4], cl
         mov byte [GdtTable.tss + 7], ch
         
+        extern StackTop
+        push dword StackTop
+        call TssSetEsp
+        add esp, 4
+
         ; Load the TSS
         mov eax, 0x28
         ltr ax

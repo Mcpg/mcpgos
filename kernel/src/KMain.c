@@ -31,7 +31,7 @@ void KMain()
     liballoc_dump();
 
     //*((uint32_t*)0xB8000)=0x0733073A; /* :3 */
-    SchedEnable();
+    STI();
     while(1)
     {
         asm("hlt");

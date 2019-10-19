@@ -1,15 +1,20 @@
 #pragma once
 
-#include <stdbool.h>
+#include <McpgOS.h>
+
+typedef enum
+{
+    TASK_STATE_RUNNING,
+    TASK_STATE_SLEEPING
+} SchedTaskState;
 
 typedef struct SchedTask SchedTask;
 struct SchedTask
 {
-    uint32_t TaskID;
     bool IsKernelTask;
 
-    SchedTask* Next;
-    SchedTask* Prev;
+    SchedTaskState TaskState;
+    uint32_t RemainingCpuTime;
 
     struct
     {
@@ -41,21 +46,26 @@ struct SchedTask
         } KernelTaskInfo;
         struct
         {
-            void* ParentProcess; // TODO: change the pointer type to process struct pointer type
+            Process* ParentProcess;
         } UserTaskInfo;
     };
 };
 
+typedef struct
+{
+    LListElement ListElement;
+    SchedTask* Task;
+} SchedKernelTaskElement;
 
-extern uint32_t SchedTaskCount;
-extern SchedTask* SchedIdleTask;
+extern SchedKernelTaskElement* SchedKernelTasks;
 extern SchedTask* SchedCurrentTask;
+extern ProcessListElement* SchedCurrentProcess; // may be NULL
 
 extern uint64_t SchedTickCounter;
 
 void SchedInit();
-void SchedEnable();
-SchedTask* SchedGetTask(int taskID);
-int SchedAddTask(SchedTask* task);
-int SchedRemoveTask(int taskID);
-int SchedCreateKernelTask(char* name, void* func, size_t stackSize);
+void SchedSleep(SchedTask* task, uint32_t millis);
+
+SchedTask* SchedCreateUserTask(Process* owner, void* func, uint32_t stackPtr);
+SchedTask* SchedCreateKernelTask(char* name, void* func, size_t stackSize);
+

@@ -10,6 +10,11 @@ void KPanic(char* reason);
     if (!((int) (__VA_ARGS__)))                   \
         KPanic("Assertion failed: " #__VA_ARGS__)
 
+#define __STR_HELPER(x) #x
+#define __STR(x) __STR_HELPER(x)
+#define UNIMPLEMENTED() \
+    KPanic("Reached unimplemented: " __FILE__ ":" __STR(__LINE__))
+
 #define CLI() asm volatile("cli")
 #define HALT() asm volatile("hlt")
 #define STI() asm volatile("sti")
@@ -20,6 +25,7 @@ void KPanic(char* reason);
 #include <Cpu/Pic.h>
 #include <Cpu/Pit.h>
 
+#include <Utils/LinkedList.h>
 #include <IoStream.h>
 #include <Kprintf.h>
 
@@ -29,6 +35,8 @@ void KPanic(char* reason);
 #include <Mm/LibAlloc.h>
 
 #include <Drivers/DriverManager.h>
+
+#include <Scheduler/Process.h>
 #include <Scheduler/Scheduler.h>
 
 #include <Drivers/TTY.h>
@@ -43,6 +51,9 @@ extern void* _KernelSizePages;
 
 extern void* _VirtualAddress;
 extern void* _PhysicalAddress;
+
+// Defined in _start.asm
+extern void* StackTop;
 
 // Linker symbols defined in a more accessible form
 extern void* KernelStart;
