@@ -157,7 +157,7 @@ static IdtFrame* SchedIrqHandler(IdtFrame* frame)
         {
             SwitchPageDirectory(MmVirtToPhys(
                 GetCurrentPageDirectory(),
-                SchedCurrentProcess->Process->PageDirectory
+                (uintptr_t) SchedCurrentProcess->Process->PageDirectory
             ));
         }
     }

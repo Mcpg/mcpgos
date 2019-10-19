@@ -54,7 +54,7 @@ PageTableEntry* MmGetTable(PageDirectoryEntry* pde, int index);
 PageTableEntry* MmGetTableAddr(PageDirectoryEntry* pde, uintptr_t virt);
 PageTableEntry* MmGetTableEntry(PageDirectoryEntry* pde, uintptr_t virt);
 
-uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t* virt);
+uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t virt);
 
 bool MmIsPresent(uintptr_t virt);
 bool MmIsWritable(uintptr_t virt);

@@ -8,7 +8,7 @@ void PitInit()
     // 1.193182 MHz / 1000 Hz = divider
     // The PIT is effectively running at a speed of 1 IRQ
     // per millisecond
-    //PitReconfigureC0(0x1234DE / 1000);
+    PitReconfigureC0(0x1234DE / 1000);
 }
 
 void PitReconfigureC0(uint16_t div)
