@@ -78,6 +78,89 @@ uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t virt)
     return (pte->Raw & (~0xFFF)) + (virt & 0xFFF);
 }
 
+void* MmMmap(void* ptr, uint32_t pages, bool user, bool writable)
+{
+    const uint32_t startingPage = 1024;
+    const uint32_t endingPage = 917503;
+
+    bool blockBigEnough = false;
+    bool foundStartingPoint;
+    uint32_t ptrPage;
+    uint32_t foundPageBase;
+    uint32_t pagesFound = 0;
+    uint32_t i;
+
+    KAssert(pages > 0);
+
+    if (ptr != NULL)
+    {
+        KAssert((((uintptr_t) ptr) & (~0xFFF)) == 0);
+        
+        ptrPage = ((uintptr_t) ptr) >> 12;
+        KAssert(ptr >= startingPage && ptr <= endingPage);
+        KAssert((ptr + pages) <= endingPage);
+    }
+
+    if (ptr == NULL)
+    {
+        // Find a memory block big enough
+
+        foundStartingPoint = false;
+
+        for (ptrPage = startingPage; ptrPage <= endingPage; ptrPage++)
+        {
+            if (MmIsPresent(ptrPage << 12))
+            {
+                pagesFound = 0;
+                foundStartingPoint = false;
+                foundPageBase = 0;
+            }
+            else
+            {
+                if (!foundStartingPoint)
+                    foundPageBase = ptrPage;
+                foundStartingPoint = true;
+                pagesFound++;
+            }
+
+            if (foundStartingPoint && pagesFound == pages)
+                break;
+        }
+
+        if (!foundStartingPoint)
+            return NULL;
+
+        ptr = (void*) (foundPageBase << 12);
+    }
+    else
+    {
+        // Verify whether there's enough space for the mapping
+        
+        blockBigEnough = true;
+        for (i = ptrPage; ptrPage < (ptrPage + pages); i++)
+        {
+            if (MmIsPresent(i << 12))
+            {
+                blockBigEnough = false;
+                return;
+            }
+        }
+
+        if (!blockBigEnough)
+            return NULL;
+    }
+
+    for (i = ptrPage; ptrPage < (ptrPage + pages); i++)
+    {
+        MmMap(
+            MmPmAllocate(), (uintptr_t) ptr,
+            user, writable
+        );
+    }
+
+    return ptr;
+}
+
 bool MmIsPresent(uintptr_t virt)
 {
     PageTableEntry* pte = MmGetTableEntry(GetCurrentPageDirectory(), virt);

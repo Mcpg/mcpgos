@@ -27,6 +27,7 @@ void KMain()
 
     /* Initialize other kernel components */
     SchedInit();
+    SyscallInit();
 
     liballoc_dump();
 

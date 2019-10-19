@@ -43,6 +43,8 @@ void KPanic(char* reason);
 #include <Drivers/RamDisk.h>
 #include <Drivers/PS2Keyboard.h>
 
+#include <Syscalls/Syscalls.h>
+
 // Linker-defined symbols
 extern void* _KernelStart;
 extern void* _KernelEnd;

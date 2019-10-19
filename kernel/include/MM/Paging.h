@@ -56,6 +56,22 @@ PageTableEntry* MmGetTableEntry(PageDirectoryEntry* pde, uintptr_t virt);
 
 uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t virt);
 
+//
+// Maps a specified amount of pages starting at ptr in current
+// paging directory.
+//
+// If not NULL, ptr must be page aligned.
+// If NULL, the kernel will find the address itself.
+//
+// Note, that the search is done on the userspace (above 4 MiB
+// and below 0xE0000000). For kernel space memory mapping use
+// MmVm* functions.
+//
+// MmMmap returns NULL on failure or the base of the allocated
+// space.
+//
+void* MmMmap(void* ptr, uint32_t pages);
+
 bool MmIsPresent(uintptr_t virt);
 bool MmIsWritable(uintptr_t virt);
 bool MmIsUser(uintptr_t virt);
