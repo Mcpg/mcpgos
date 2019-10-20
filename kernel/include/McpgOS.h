@@ -8,7 +8,7 @@
 void KPanic(char* reason);
 #define KAssert(...)                              \
     if (!((int) (__VA_ARGS__)))                   \
-        KPanic("Assertion failed: " #__VA_ARGS__)
+        KPanic("Assertion failed: " #__VA_ARGS__ "\n " __FILE__ ":" __STR(__LINE__))
 
 #define __STR_HELPER(x) #x
 #define __STR(x) __STR_HELPER(x)

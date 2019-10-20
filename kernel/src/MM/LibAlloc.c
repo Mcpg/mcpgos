@@ -19,7 +19,7 @@
 #define USE_CASE1
 #define USE_CASE2
 #define USE_CASE3
-#define USE_CASE4
+//#define USE_CASE4 // TODO: hack disabled
 #define USE_CASE5
 
 

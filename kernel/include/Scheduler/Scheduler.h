@@ -66,6 +66,6 @@ extern uint64_t SchedTickCounter;
 void SchedInit();
 void SchedSleep(SchedTask* task, uint32_t millis);
 
-SchedTask* SchedCreateUserTask(Process* owner, void* func, uint32_t stackPtr);
+SchedTask* SchedCreateUserTask(Process* owner, uint32_t eip, uint32_t stackPtr);
 SchedTask* SchedCreateKernelTask(char* name, void* func, size_t stackSize);
 

@@ -119,9 +119,6 @@ section .text
                 loop .kernelSpaceMapping.loop
         
         ; Enable paging
-        extern CurrentPageDirectory
-        mov dword [CurrentPageDirectory], TemporaryPageDirectory
-        
         mov eax, TO_PHYSICAL(TemporaryPageDirectory)
         mov cr3, eax
         
@@ -131,6 +128,11 @@ section .text
         
         ; Here the CPU either page faults or continues to jump to KMain.
         
+        extern CurrentPageDirectoryPhys
+        extern CurrentPageDirectory
+        mov dword [CurrentPageDirectory], TemporaryPageDirectory
+        mov dword [CurrentPageDirectoryPhys], TO_PHYSICAL(TemporaryPageDirectory)
+
         mov esp, StackTop
         cld
         

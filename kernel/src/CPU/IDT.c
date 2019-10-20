@@ -15,6 +15,13 @@ IdtFrame* IdtGlobalIntHandler(IdtFrame* idtFrame)
         while(1);
     }
 
+    if (idtFrame->InterruptNumber <= 0x1E)
+    {
+        *((uint8_t*) 0xB8000) = ':';
+        *((uint8_t*) 0xB8002) = '/';
+        while(1);
+    }
+
     if (IdtIntHandlers[n] != NULL)
     {
         idtFrame = IdtIntHandlers[n](idtFrame);

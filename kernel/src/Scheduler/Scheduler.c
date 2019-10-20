@@ -152,14 +152,8 @@ static IdtFrame* SchedIrqHandler(IdtFrame* frame)
 
     if (SchedCurrentProcess != NULL)
     {
-        if (GetCurrentPageDirectory()
-                != SchedCurrentProcess->Process->PageDirectory)
-        {
-            SwitchPageDirectory(MmVirtToPhys(
-                GetCurrentPageDirectory(),
-                (uintptr_t) SchedCurrentProcess->Process->PageDirectory
-            ));
-        }
+        if (CurrentPageDirectory != SchedCurrentProcess->Process->PageDirectory)
+            SwitchPageDirectory(SchedCurrentProcess->Process->PageDirectory);
     }
 
     return frame;
@@ -192,7 +186,7 @@ void SchedSleep(SchedTask* task, uint32_t millis)
     task->RemainingCpuTime = millis;
 }
 
-SchedTask* SchedCreateUserThread(Process* owner, uint32_t eip, uint32_t stackPtr)
+SchedTask* SchedCreateUserTask(Process* owner, uint32_t eip, uint32_t stackPtr)
 {
     ProcessThreadElement* element;
     SchedTask* task;

@@ -44,9 +44,9 @@ typedef union PageDirectoryEntry
     uint32_t Raw;
 } PageDirectoryEntry;
 
-extern uint32_t CurrentPageDirectory;
-void SwitchPageDirectory(uint32_t newDir);
-PageDirectoryEntry* GetCurrentPageDirectory();
+extern uint32_t CurrentPageDirectoryPhys;
+extern PageDirectoryEntry* CurrentPageDirectory;
+void SwitchPageDirectory(PageDirectoryEntry* pd);
 
 PageDirectoryEntry* MmAllocPageDirectory();
 
@@ -55,6 +55,12 @@ PageTableEntry* MmGetTableAddr(PageDirectoryEntry* pde, uintptr_t virt);
 PageTableEntry* MmGetTableEntry(PageDirectoryEntry* pde, uintptr_t virt);
 
 uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t virt);
+
+//
+// Converts a physical address to a virtual one, as long as it's mapped
+// to the kernel space.
+//
+void* MmKernelPhysToVirt(uint32_t phys);
 
 //
 // Maps a specified amount of pages starting at ptr in current
@@ -70,7 +76,7 @@ uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t virt);
 // MmMmap returns NULL on failure or the base of the allocated
 // space.
 //
-void* MmMmap(void* ptr, uint32_t pages);
+void* MmMmap(void* ptr, uint32_t pages, bool user, bool writable);
 
 bool MmIsPresent(uintptr_t virt);
 bool MmIsWritable(uintptr_t virt);

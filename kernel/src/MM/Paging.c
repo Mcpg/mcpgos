@@ -1,16 +1,13 @@
 #include <McpgOS.h>
 
-uint32_t CurrentPageDirectory = 0;
+uint32_t CurrentPageDirectoryPhys = 0;
+PageDirectoryEntry* CurrentPageDirectory = NULL;
 
-void SwitchPageDirectory(uint32_t newDir)
+void SwitchPageDirectory(PageDirectoryEntry* pd)
 {
-    CurrentPageDirectory = newDir;
-    asm("mov %%eax, %%cr3" : : "a" (newDir));
-}
-
-PageDirectoryEntry* GetCurrentPageDirectory()
-{
-    return (PageDirectoryEntry*) K_PHYS_TO_VIRT(CurrentPageDirectory);
+    CurrentPageDirectoryPhys = MmVirtToPhys(CurrentPageDirectory, (uintptr_t) pd);
+    CurrentPageDirectory = pd;
+    asm("mov %%eax, %%cr3" : : "a" (CurrentPageDirectoryPhys));
 }
 
 PageDirectoryEntry* MmAllocPageDirectory()
@@ -26,7 +23,7 @@ PageDirectoryEntry* MmAllocPageDirectory()
     // Map the kernel space
     for (i = 0; i < 128; i++)
     {
-        current = &result[768 + i];
+        current = &result[896 + i];
         memset(current, 0, sizeof(PageDirectoryEntry));
         current->Raw = K_VIRT_TO_PHYS(&KernelPageTables[i * 1024]);
         current->Present = 1;
@@ -51,7 +48,7 @@ PageTableEntry* MmGetTable(PageDirectoryEntry* pde, int index)
     
     if (pde[index].Present == 0)
         return NULL;
-    return (PageTableEntry*) K_PHYS_TO_VIRT(pde[index].Raw & 0xFFFFF000);
+    return (PageTableEntry*) MmKernelPhysToVirt(pde[index].Raw & 0xFFFFF000);
 }
 
 PageTableEntry* MmGetTableAddr(PageDirectoryEntry* pde, uintptr_t virt)
@@ -62,7 +59,7 @@ PageTableEntry* MmGetTableAddr(PageDirectoryEntry* pde, uintptr_t virt)
 PageTableEntry* MmGetTableEntry(PageDirectoryEntry* pde, uintptr_t virt)
 {
     PageTableEntry* pte = MmGetTableAddr(pde, virt);
-    return pte ? &pte[virt & 1023] : NULL;
+    return pte ? &pte[(virt >> 12) & 1023] : NULL;
 }
 
 uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t virt)
@@ -75,13 +72,28 @@ uint32_t MmVirtToPhys(PageDirectoryEntry* pde, uintptr_t virt)
     if (pte == NULL)
         return 0;
 
-    return (pte->Raw & (~0xFFF)) + (virt & 0xFFF);
+    return (pte->PhysAddress << 12) + (virt & 0xFFF);
+}
+
+void* MmKernelPhysToVirt(uint32_t phys)
+{
+    int i;
+
+    for (i = 0; i < 131072; i++)
+    {
+        if ((KernelPageTables[i].Raw & ~0xFFF) == (phys & ~0xFFF))
+            return (void*) (KernelPageTables[i].Raw & ~0xFFF) + (phys & 0xFFF);
+    }
+
+    return NULL;
 }
 
 void* MmMmap(void* ptr, uint32_t pages, bool user, bool writable)
 {
     const uint32_t startingPage = 1024;
     const uint32_t endingPage = 917503;
+
+    // TODO: mmap does not work
 
     bool blockBigEnough = false;
     bool foundStartingPoint;
@@ -94,11 +106,11 @@ void* MmMmap(void* ptr, uint32_t pages, bool user, bool writable)
 
     if (ptr != NULL)
     {
-        KAssert((((uintptr_t) ptr) & (~0xFFF)) == 0);
+        KAssert(((uintptr_t) ptr & 0xFFF) == 0);
         
         ptrPage = ((uintptr_t) ptr) >> 12;
-        KAssert(ptr >= startingPage && ptr <= endingPage);
-        KAssert((ptr + pages) <= endingPage);
+        KAssert(ptrPage >= startingPage && ptrPage <= endingPage);
+        KAssert((ptrPage + pages) <= endingPage);
     }
 
     if (ptr == NULL)
@@ -142,7 +154,7 @@ void* MmMmap(void* ptr, uint32_t pages, bool user, bool writable)
             if (MmIsPresent(i << 12))
             {
                 blockBigEnough = false;
-                return;
+                break;
             }
         }
 
@@ -163,7 +175,7 @@ void* MmMmap(void* ptr, uint32_t pages, bool user, bool writable)
 
 bool MmIsPresent(uintptr_t virt)
 {
-    PageTableEntry* pte = MmGetTableEntry(GetCurrentPageDirectory(), virt);
+    PageTableEntry* pte = MmGetTableEntry(CurrentPageDirectory, virt);
 
     if (!pte)
         return false;
@@ -173,7 +185,7 @@ bool MmIsPresent(uintptr_t virt)
 
 bool MmIsWritable(uintptr_t virt)
 {
-    PageTableEntry* pte = MmGetTableEntry(GetCurrentPageDirectory(), virt);
+    PageTableEntry* pte = MmGetTableEntry(CurrentPageDirectory, virt);
 
     if (!pte)
         return false;
@@ -183,7 +195,7 @@ bool MmIsWritable(uintptr_t virt)
 
 bool MmIsUser(uintptr_t virt)
 {
-    PageTableEntry* pte = MmGetTableEntry(GetCurrentPageDirectory(), virt);
+    PageTableEntry* pte = MmGetTableEntry(CurrentPageDirectory, virt);
 
     if (!pte)
         return false;
@@ -193,11 +205,23 @@ bool MmIsUser(uintptr_t virt)
 
 bool MmMap(uint32_t phys, uintptr_t virt, bool user, bool writable)
 {
-    PageDirectoryEntry* pde = GetCurrentPageDirectory();
+    PageDirectoryEntry* pde = CurrentPageDirectory;
     PageTableEntry* pte = MmGetTableEntry(pde, virt);
 
     if (!pte)
-        return false;
+    {
+        // TODO: move page table allocation to a separate function
+        pde[virt >> 22].Raw
+            = MmVirtToPhys(
+                CurrentPageDirectory,
+                malloc(sizeof(PageTableEntry) * 1024)
+            ) & ~0xFFF;
+        pde[virt >> 22].User = user;
+        pde[virt >> 22].Writable = writable;
+        pde[virt >> 22].Present = true;
+
+        pte = MmGetTableEntry(pde, virt);
+    }
 
     pte->PhysAddress = phys >> 12;
     pte->Present = 1;
@@ -209,7 +233,7 @@ bool MmMap(uint32_t phys, uintptr_t virt, bool user, bool writable)
 
 bool MmUnmap(uintptr_t virt)
 {
-    PageDirectoryEntry* pde = GetCurrentPageDirectory();
+    PageDirectoryEntry* pde = CurrentPageDirectory;
     PageTableEntry* pte = MmGetTableEntry(pde, virt);
 
     if (!pte)
