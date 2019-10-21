@@ -30,6 +30,9 @@ void KMain()
     /* Initialize other kernel components */
     SchedInit();
     SyscallInit();
+    VfsInit();
+
+    DevfsInit();
 
     STI();
     while(1)

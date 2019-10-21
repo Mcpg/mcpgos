@@ -75,6 +75,8 @@ extern void    *PREFIX(calloc)(size_t, size_t);		///< The standard function.
 #define tmalloc(type) ((type*) malloc(sizeof(type)))
 #define tnmalloc(type, n) ((type*) malloc(sizeof(type) * n))
 
+#define tnrealloc(ptr, type, n) ((type*) realloc(ptr, sizeof(type) * n))
+
 void liballoc_dump();
 
 #ifdef __cplusplus

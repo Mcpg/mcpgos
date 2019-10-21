@@ -46,6 +46,9 @@ void KPanic(char* reason);
 
 #include <Syscalls/Syscalls.h>
 
+#include <Vfs/Vfs.h>
+#include <Vfs/Devfs.h>
+
 // Linker-defined symbols
 extern void* _KernelStart;
 extern void* _KernelEnd;

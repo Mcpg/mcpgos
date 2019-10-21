@@ -9,6 +9,9 @@ IoStream _TTYStream;
 IoStream* TTYStream = &_TTYStream;
 static DmDriverDefinition DriverDefinition;
 
+static DevfsOperations TTYDevfsOps;
+static DevfsDevice TTYDevfsDev;
+
 static int TTYIOWrite(IoStream* s, void* buf, uint32_t len)
 {
     TTYWrite((uint8_t*) buf, len);
@@ -18,6 +21,11 @@ static int TTYIOWrite(IoStream* s, void* buf, uint32_t len)
 static int TTYIOCanWrite(IoStream* s)
 {
     return 1;
+}
+
+static IoStream* TTYOpen()
+{
+    return TTYStream;
 }
 
 void TTYInit()
@@ -46,6 +54,12 @@ void TTYInit()
         NULL,
         NULL
     );
+
+    TTYDevfsOps.GetSizeCallback = NULL;
+    TTYDevfsOps.FileOpenCallback = TTYOpen;
+    TTYDevfsDev.Name = "tty";
+    TTYDevfsDev.Operations = &TTYDevfsOps;
+    DevfsAddDevice(&TTYDevfsDev);
 
     DriverDefinition.DriverID = "TTY";
     DmRegisterDriver(&DriverDefinition);
