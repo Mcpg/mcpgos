@@ -1,6 +1,6 @@
 # McpgOS
 Experimental Unix-like x86-32 operating system with a dirty codebase, written in
-C++.
+C.
 
 ## Building
 You need:
