@@ -48,7 +48,7 @@ uint32_t MmPmAllocate()
     }
 
     if (!foundPage)
-        return 0;
+        KPanic("Could not allocate physical page!");
 
     MmPmSetBitmapValue(i, MmPmPageUsed);
 
@@ -60,7 +60,7 @@ void MmPmFree(uint32_t phys)
     uint32_t pageIndex = phys >> 10;
     
     if (MmPmGetBitmapValue(pageIndex) != MmPmPageUsed)
-        return;
+        KPanic("Attempting to free page not marked as used!");
 
     MmPmSetBitmapValue(pageIndex, MmPmPageFree);
 

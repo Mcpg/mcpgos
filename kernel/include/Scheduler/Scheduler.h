@@ -2,18 +2,24 @@
 
 #include <McpgOS.h>
 
+#define STACK_ALLOCATE(size) \
+    (((uint32_t) (malloc(size))) + size)
+
 typedef enum
 {
     TASK_STATE_RUNNING,
     TASK_STATE_SLEEPING
 } SchedTaskState;
 
-typedef struct SchedTask SchedTask;
-struct SchedTask
-{
-    bool IsKernelTask;
+struct Process;
+typedef struct Process Process;
 
-    SchedTaskState TaskState;
+typedef struct
+{
+    Process* ParentProcess;
+    char* ThreadName;
+
+    SchedTaskState State;
     uint32_t RemainingCpuTime;
 
     struct
@@ -37,35 +43,43 @@ struct SchedTask
         uint32_t Eip;
         uint32_t Eflags;
     } CPUFrame;
+} SchedThread;
 
-    union
-    {
-        struct
-        {
-            char* TaskName;
-        } KernelTaskInfo;
-        struct
-        {
-            Process* ParentProcess;
-        } UserTaskInfo;
-    };
+typedef struct
+{
+    LListElement ListElement;
+    SchedThread* Thread;
+} ProcThreadElement;
+
+struct Process
+{
+    uint32_t ProcessId;
+    uint32_t UserId;
+    bool IsKernelMode;
+
+    PageDirectoryEntry* PageDirectory;
+    ProcThreadElement* Threads;
 };
 
 typedef struct
 {
     LListElement ListElement;
-    SchedTask* Task;
-} SchedKernelTaskElement;
-
-extern SchedKernelTaskElement* SchedKernelTasks;
-extern SchedTask* SchedCurrentTask;
-extern ProcessListElement* SchedCurrentProcess; // may be NULL
+    Process* Process;
+} ProcListElement;
 
 extern uint64_t SchedTickCounter;
+extern ProcListElement* SchedProcessList;
 
 void SchedInit();
-void SchedSleep(SchedTask* task, uint32_t millis);
+void SchedSleep(SchedThread* thread, uint32_t millis);
 
-SchedTask* SchedCreateUserTask(Process* owner, uint32_t eip, uint32_t stackPtr);
-SchedTask* SchedCreateKernelTask(char* name, void* func, size_t stackSize);
+Process* SchedCreateProcess(
+    bool kernelMode, bool allocPageDir,
+    uint32_t uid
+);
+
+SchedThread* SchedCreateThread(
+    Process* owner, char* name,
+    void* eip, void* stack
+);
 

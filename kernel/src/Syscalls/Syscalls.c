@@ -12,6 +12,12 @@ int SyscallTest(uint32_t n)
     return n * 2;
 }
 
+int SyscallTTYWrite(char* buffer, uint32_t size)
+{
+    IoWrite(TTYStream, buffer, size);
+    return size;
+}
+
 static IdtFrame* SyscallIntHandler(IdtFrame* frame)
 {
     if (frame->Eax >= SYSCALL_HANDLER_AMOUNT)
@@ -27,6 +33,7 @@ static IdtFrame* SyscallIntHandler(IdtFrame* frame)
 void SyscallInit()
 {
     SyscallHandlers[0] = (SyscallHandler) SyscallTest;
+    SyscallHandlers[1] = (SyscallHandler) SyscallTTYWrite;
 
     IdtSetHandler(0x83, SyscallIntHandler);
 }

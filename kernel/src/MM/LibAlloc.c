@@ -599,9 +599,9 @@ void *PREFIX(malloc)(size_t req_size)
 
 
 
+// TODO: uncomment liballoc free() implementation
 
-
-void PREFIX(free)(void *ptr)
+/*void PREFIX(free)(void *ptr)
 {
 	struct liballoc_minor *min;
 	struct liballoc_major *maj;
@@ -726,7 +726,7 @@ void PREFIX(free)(void *ptr)
 	liballoc_unlock();		// release the lock
 }
 
-
+*/
 
 
 

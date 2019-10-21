@@ -51,6 +51,11 @@ static inline int IoWrite(IoStream* stream, void* buf, uint32_t size)
         return 0;
 }
 
+static inline int IoWriteByte(IoStream* stream, uint8_t n)
+{
+    return IoWrite(stream, &n, 1);
+}
+
 static inline int IoRead(IoStream* stream, void* buf, uint32_t size)
 {
     if (stream->ReadCallback)

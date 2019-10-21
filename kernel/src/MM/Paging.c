@@ -214,7 +214,7 @@ bool MmMap(uint32_t phys, uintptr_t virt, bool user, bool writable)
         pde[virt >> 22].Raw
             = MmVirtToPhys(
                 CurrentPageDirectory,
-                malloc(sizeof(PageTableEntry) * 1024)
+                (uintptr_t) malloc(sizeof(PageTableEntry) * 1024)
             ) & ~0xFFF;
         pde[virt >> 22].User = user;
         pde[virt >> 22].Writable = writable;

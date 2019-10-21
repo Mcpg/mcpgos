@@ -24,9 +24,10 @@
 
 typedef uint32_t (*SyscallHandler)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t);
 
-#define SYSCALL_HANDLER_AMOUNT 1
+#define SYSCALL_HANDLER_AMOUNT 2
 extern SyscallHandler SyscallHandlers[SYSCALL_HANDLER_AMOUNT];
 
 int SyscallTest(uint32_t n);
+int SyscallTTYWrite(char* buffer, uint32_t size);
 
 void SyscallInit();

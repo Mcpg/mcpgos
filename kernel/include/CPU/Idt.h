@@ -21,7 +21,7 @@ typedef struct
     uint32_t Edi;
     uint32_t Esi;
     uint32_t Ebp;
-    uint32_t Esp;
+    uint32_t _;
     uint32_t Ebx;
     uint32_t Edx;
     uint32_t Ecx;

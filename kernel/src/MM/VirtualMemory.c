@@ -44,7 +44,7 @@ uintptr_t MmVmAllocate(uint32_t pages)
     }
 
     if (!foundPages)
-        return 0;
+        KPanic("Could not allocate kernel virtual pages");
 
     for (i = startingPage; i < (startingPage + pages); i++)
     {
@@ -69,4 +69,6 @@ void MmVmFree(uintptr_t virt, uint32_t pages)
         startingPte->PhysAddress = 0;
         startingPte++;
     }
+
+    // TODO: implement MmVmFree
 }

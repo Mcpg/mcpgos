@@ -33,10 +33,11 @@ void KPanic(char* reason);
 #include <Mm/PhysicalMemory.h>
 #include <Mm/Paging.h>
 #include <Mm/LibAlloc.h>
+#define free(...) ;
+// TODO: fix memory freeing
 
 #include <Drivers/DriverManager.h>
 
-#include <Scheduler/Process.h>
 #include <Scheduler/Scheduler.h>
 
 #include <Drivers/TTY.h>

@@ -85,7 +85,7 @@ section .data
         
         ; TSS (base to be set by GdtInit)
         .tss:
-        GDT_ENTRY 0, 104, 0x89, 0x40
+        GDT_ENTRY 0, 104, 0xE9, 0x40
         
         .end:
     
