@@ -31,19 +31,6 @@ void KMain()
     SchedInit();
     SyscallInit();
 
-    liballoc_dump();
-
-    Process* proc = SchedCreateProcess(false, true, 0);
-    KAssert(proc != NULL);
-    SwitchPageDirectory(proc->PageDirectory);
-    KAssert(MmMap(MmPmAllocate(), 0xA0000000, true, true));
-    memcpy((void*) 0xA0000000, TestFunction, 1024);
-
-    KAssert(
-        SchedCreateThread(proc, "test", 0xA0000000, 0xA0000000 + 1024) != NULL
-    );
-
-    //*((uint32_t*)0xB8000)=0x0733073A; /* :3 */
     STI();
     while(1)
     {
