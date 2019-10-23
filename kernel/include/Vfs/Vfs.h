@@ -19,7 +19,6 @@ typedef enum
 
 typedef struct
 {
-    
 } VfsInodeOperations;
 
 typedef struct
@@ -30,8 +29,8 @@ typedef struct
 struct VfsInode
 {
     char* Name;
-    //uint32_t uid; // TODO: file permissions
-    //uint32_t gid;
+    uint32_t Uid; // TODO: file permissions
+    uint32_t Gid;
 
     VfsInodeType Type;
     VfsDirectory* Parent;
@@ -45,7 +44,7 @@ struct VfsDirectory
     VfsInode Inode;
 
     uint32_t ChildrenAmount;
-    VfsInode* Children;
+    VfsInode** Children;
 
     VfsDirectoryOperations* Operations;
 };

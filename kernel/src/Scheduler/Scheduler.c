@@ -76,6 +76,12 @@ static inline void PickNextThread()
     }
 }
 
+static void SchedTick()
+{
+    // uhhhh
+    asm("int $0x20");
+}
+
 static IdtFrame* SchedIrqHandler(IdtFrame* frame)
 {
     static bool initialized = false;
@@ -134,12 +140,22 @@ static void SchedIdle()
     while (true) HALT();
 }
 
+static void SchedSleepTest()
+{
+    SchedSleep(CurrIteratedThread->Thread, 1000);
+    while(1);
+}
+
 void SchedInit()
 {
     SchedCreateProcess(true, false, 0);
     SchedCreateThread(
         SchedProcessList->Process, "KIdle",
         SchedIdle, (void*) STACK_ALLOCATE(128)
+    );
+    SchedCreateThread(
+        SchedProcessList->Process, "Test",
+        SchedSleepTest, (void*) STACK_ALLOCATE(128)
     );
 
     CurrIteratedProc = SchedProcessList;
@@ -154,6 +170,7 @@ void SchedSleep(SchedThread* thread, uint32_t millis)
 
     thread->State = TASK_STATE_SLEEPING;
     thread->RemainingCpuTime = millis;
+    SchedTick();
 }
 
 Process* SchedCreateProcess(

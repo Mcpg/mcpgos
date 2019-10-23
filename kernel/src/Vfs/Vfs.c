@@ -58,7 +58,6 @@ bool VfsIsFsRegistered(char* name)
 VfsFsInstance* VfsCreateInstance(char* fsName, IoStream* stream)
 {
     KAssert(fsName != NULL);
-    KAssert(stream != NULL);
 
     VfsFilesystemInfo* info = VfsGetFilesystem(fsName);
     KAssert(info != NULL);
